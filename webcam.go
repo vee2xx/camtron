@@ -114,7 +114,6 @@ func StartElectron() {
 	}
 
 	log.Print("Starting Electron")
-	log.Print(args)
 
 	err := Shellout(shell, args...)
 	if err != nil {
