@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"runtime"
 	"time"
 
@@ -84,27 +85,41 @@ func StartElectron() {
 	log.Println("INFO: starting electron")
 
 	goos := runtime.GOOS
+
+	_, filename, _, ok := runtime.Caller(0)
+
+	if !ok {
+		panic("No caller information")
+	}
+
+	goPath := path.Dir(filename)
+
 	var shell string
 	var args []string
 	switch goos {
 	case "windows":
 		shell = "cmd"
 		args = append(args, "/C")
-		args = append(args, "cd camtron/camtron-win32-x64 && camtron.exe")
+		args = append(args, "cd "+goPath+"/camtron-win32-x64 && camtron.exe")
 	case "darwin":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd camtron/camtron-darwin-x64 && open camtron")
+		args = append(args, "cd "+goPath+"/camtron-darwin-x64 && open camtron")
 	case "linux":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd camtron/camtron-linux-x64 && ./camtron")
+		args = append(args, "cd "+goPath+"/camtron-linux-x64 && ./camtron")
 	default:
 		log.Println("Unsupported OS: %s.\n", goos)
 	}
 
 	log.Print("Starting Electron")
+	log.Print(args)
+
 	err := Shellout(shell, args...)
+	if err != nil {
+		log.Print(err)
+	}
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
