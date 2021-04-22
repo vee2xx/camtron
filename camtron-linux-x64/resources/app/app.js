@@ -17,27 +17,19 @@ let mediaRecorder;
 const recordedChunks = [];
 
 var cameras = [];
-async function getPermissions() {
-  let permissionsGranted = true;
-  if (isMac) {
-    permissionsGranted = await systemPreferences.askForMediaAccess("microphone");
-  }
-  return permissionsGranted;
-}
+
 function initialize () {
-  alert(isMac)
   video = window.document.querySelector('video');
   recordButton = window.document.querySelector('record');
   let permissionsGranted = true;
   if (isMac) {
-    systemPreferences.askForMediaAccess("camera").then(function(result) {
-      alert(result);
-      permissionsGranted = result;
-    })
+    permissionsGranted = await systemPreferences.askForMediaAccess("microphone");
   }
 
-  alert(permissionsGranted);
-
+  if (!permissionsGranted) {
+    alert("Access to camera denied")
+  }
+  
   navigator.mediaDevices.enumerateDevices()
     .then(function(devices) {
       cameras = devices.filter(device => device.kind == 'videoinput')

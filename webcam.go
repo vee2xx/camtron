@@ -104,7 +104,7 @@ func StartElectron() {
 	case "darwin":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd "+goPath+"/camtron-darwin-x64 && open camtron")
+		args = append(args, "cd "+goPath+"/camtron-darwin-x64 && open camtron.app")
 	case "linux":
 		shell = "bash"
 		args = append(args, "-c")
