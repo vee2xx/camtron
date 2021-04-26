@@ -3,13 +3,13 @@ package camtron
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
 	"runtime"
 	"time"
 
@@ -81,18 +81,62 @@ func Shellout(shell string, args ...string) error {
 	return err
 }
 
+func checkForElectronBinary() {
+	goos := runtime.GOOS
+
+	var filename string
+	switch goos {
+	case "windows":
+		filename = "camtron-win32-x64.zip"
+	case "darwin":
+		filename = "camtron-darwin-x64.zip"
+	case "linux":
+		filename = "camtron-linux-x64.zip"
+	default:
+		log.Fatal("Unsupported OS: %s.\n", goos)
+	}
+
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		url := "https://github.com/vee2xx/camtron-ui/releases/download/v1.0.0/" + filename
+
+		file, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		defer file.Body.Close()
+
+		out, err := os.Create(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer out.Close()
+
+		_, err = io.Copy(out, file.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		cmd := exec.Command("bash", "-c", "unzip camtron-darwin-x64.zip")
+		err = cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 func StartElectron() {
 	log.Println("INFO: starting electron")
 
+	checkForElectronBinary()
 	goos := runtime.GOOS
 
-	_, filename, _, ok := runtime.Caller(0)
+	// _, filename, _, ok := runtime.Caller(0)
 
-	if !ok {
-		panic("No caller information")
-	}
+	// if !ok {
+	// 	panic("No caller information")
+	// }
 
-	goPath := path.Dir(filename)
+	// goPath := path.Dir(filename)
 
 	var shell string
 	var args []string
@@ -100,15 +144,15 @@ func StartElectron() {
 	case "windows":
 		shell = "cmd"
 		args = append(args, "/C")
-		args = append(args, "cd "+goPath+"/camtron-win32-x64 && camtron.exe")
+		args = append(args, "cd camtron-win32-x64 && camtron.exe")
 	case "darwin":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd "+goPath+"/camtron-darwin-x64 && open camtron.app")
+		args = append(args, "cd camtron-darwin-x64 && open camtron.app")
 	case "linux":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd "+goPath+"/camtron-linux-x64 && ./camtron")
+		args = append(args, "cd camtron-linux-x64 && ./camtron")
 	default:
 		log.Println("Unsupported OS: %s.\n", goos)
 	}
