@@ -3,6 +3,8 @@ package camtron
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -81,23 +83,39 @@ func Shellout(shell string, args ...string) error {
 	return err
 }
 
-func checkForElectronBinary() {
-	goos := runtime.GOOS
+func getLatestUIVersion() (string, error) {
+	url := "https://api.github.com/repos/vee2xx/camtron-ui/releases"
 
-	var filename string
-	switch goos {
-	case "windows":
-		filename = "camtron-win32-x64.zip"
-	case "darwin":
-		filename = "camtron-darwin-x64.zip"
-	case "linux":
-		filename = "camtron-linux-x64.zip"
-	default:
-		log.Fatal("Unsupported OS: %s.\n", goos)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err.Error())
 	}
 
+	var releases []map[string]interface{}
+	if err := json.Unmarshal(body, &releases); err != nil {
+		log.Fatal(err)
+	}
+
+	if len(releases) == 0 {
+		return "", errors.New("unable to find any versions")
+	}
+	return fmt.Sprintf("%v", releases[0]["tag_name"]), nil
+}
+
+func downloadBinary(electronBinary string) {
+	latest, err := getLatestUIVersion()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	filename := electronBinary + ".zip"
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		url := "https://github.com/vee2xx/camtron-ui/releases/download/v1.0.0/" + filename
+		url := fmt.Sprintf("https://github.com/vee2xx/camtron-ui/releases/download/%s/%s", latest, filename)
 
 		file, err := http.Get(url)
 		if err != nil {
@@ -116,45 +134,48 @@ func checkForElectronBinary() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		cmd := exec.Command("bash", "-c", "unzip camtron-darwin-x64.zip")
-		err = cmd.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 }
+
+func UnzipBinary(electronBinary string) {
+	cmd := exec.Command("bash", "-c", "unzip "+electronBinary+".zip")
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func StartElectron() {
 	log.Println("INFO: starting electron")
 
-	checkForElectronBinary()
 	goos := runtime.GOOS
-
-	// _, filename, _, ok := runtime.Caller(0)
-
-	// if !ok {
-	// 	panic("No caller information")
-	// }
-
-	// goPath := path.Dir(filename)
 
 	var shell string
 	var args []string
+	var electronBinary string
 	switch goos {
 	case "windows":
 		shell = "cmd"
 		args = append(args, "/C")
 		args = append(args, "cd camtron-win32-x64 && camtron.exe")
+		electronBinary = "camtron-win32-x64"
 	case "darwin":
 		shell = "bash"
 		args = append(args, "-c")
 		args = append(args, "cd camtron-darwin-x64 && open camtron.app")
+		electronBinary = "camtron-darwin-x64"
 	case "linux":
 		shell = "bash"
 		args = append(args, "-c")
 		args = append(args, "cd camtron-linux-x64 && ./camtron")
+		electronBinary = "camtron-linux-x64"
 	default:
-		log.Println("Unsupported OS: %s.\n", goos)
+		log.Fatalf("Unsupported OS: %s.\n", goos)
+	}
+
+	if _, err := os.Stat(electronBinary); os.IsNotExist(err) {
+		downloadBinary(electronBinary)
+		UnzipBinary(electronBinary)
 	}
 
 	log.Print("Starting Electron")
@@ -170,14 +191,14 @@ func StartElectron() {
 		select {
 		case sig := <-c:
 			if goos == "windows" {
-				log.Println("Got %s signal. Its windows so gotta kill Electron\n", sig)
+				log.Printf("Got %s signal. Its windows so gotta kill Electron\n", sig)
 				cmd := exec.Command("cmd", "/C", " taskkill /f /im camtron.exe")
 				err := cmd.Run()
 				if err != nil {
 					log.Println("Couldn't kill camtron")
 				}
 			} else if goos == "darwin" {
-				log.Println("Got %s signal. Its MacOs so gotta kill Electron\n", sig)
+				log.Printf("Got %s signal. Its MacOs so gotta kill Electron\n", sig)
 				cmd := exec.Command("bash", "-c", " killall camtron")
 				err := cmd.Run()
 				if err != nil {
