@@ -2,6 +2,7 @@ package camtron
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,15 @@ func TestBinaryDownload(t *testing.T) {
 func TestUnzip(t *testing.T) {
 	UnzipBinary("camtron-linux-x64")
 	assert.DirExists(t, "camtron-linux-x64")
+}
+
+func TestStartElectron(t *testing.T) {
+	StartElectron()
+	cmd := exec.Command("bash", "-c", " killall camtron")
+	err := cmd.Run()
+	if err != nil {
+		t.Fail()
+	}
 }
 
 func TestCleanUp(t *testing.T) {

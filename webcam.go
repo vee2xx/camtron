@@ -1,6 +1,7 @@
 package camtron
 
 import (
+	"archive/zip"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -12,7 +13,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -137,12 +140,58 @@ func downloadBinary(electronBinary string) {
 	}
 }
 
-func UnzipBinary(electronBinary string) {
-	cmd := exec.Command("bash", "-c", "unzip "+electronBinary+".zip")
-	err := cmd.Run()
+func UnzipBinary(source string) {
+
+	r, err := zip.OpenReader(source + ".zip")
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer r.Close()
+
+	for _, f := range r.File {
+		fpath := filepath.Join(".", f.Name)
+
+		if fpath == source {
+			os.MkdirAll(fpath, os.ModePerm)
+			continue
+		}
+
+		if !strings.HasPrefix(fpath, filepath.Clean(source)+string(os.PathSeparator)) {
+			log.Fatalf("%s is an illegal filepath", fpath)
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(fpath, os.ModePerm)
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
+		outFile, err := os.OpenFile(fpath,
+			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+			f.Mode())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rc, err := f.Open()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = io.Copy(outFile, rc)
+
+		outFile.Close()
+		rc.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 }
 
 func StartElectron() {
