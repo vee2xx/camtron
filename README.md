@@ -2,7 +2,8 @@
 Camtron is a simple cross platform library written in go to easily have Go code interact with webcams i.e. consume and process a stream from a webcam consistantly across OS's without relying on opencv. It uses Electron and the MediaDevices Web API to access the webcam and allows a variety of consumers to listen for and process the video stream, for example recording a video from a webcam and saving the video to a file or sending the video from a webcam on to one or more endpoints. It is supported on Linux, Windows 10 and Macos. Currently the only supported codec is VP9. More will be added shortly.
 
 ## To use Camtron
-1. Add github.com/vee2xx/camtron to go.mod in your project and add it to the imports in your code. The library should be downloaded when you build or run your project. **You can also add it using go get github.com/vee2xx/camtron**
+1. Add github.com/vee2xx/camtron to go.mod in your project and add it to the imports in your code. The library should be downloaded when you build or run your project. You can also add it using go get github.com/vee2xx/camtron**
+1. Add github.com/vee2xx/camtron to go.mod in your project and add it to the imports in your code. The library should be downloaded when you build or run your project. You can also add it using **go get github.com/vee2xx/camtron**
 2. Configure one or more consumers and pass them to camtron.StartCam as an array
 ```golang
 var consumers map[string]camtron.StreamConsumer = make(map[string]camtron.StreamConsumer)
