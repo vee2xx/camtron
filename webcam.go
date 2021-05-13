@@ -21,7 +21,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var vidStream = make(chan []byte, 10)
+var vidStream chan []byte
+
+var videoMetaData VideoMetaData
+
+var consumers map[string]StreamConsumer
+
+var continueStreaming bool = false
+
+type VideoMetaData struct {
+	Container string
+	Codec     string
+}
 
 type StreamConsumer struct {
 	Stream  chan []byte
@@ -30,7 +41,7 @@ type StreamConsumer struct {
 	Handler func(chan []byte, chan string, map[string]string)
 }
 
-func ConsumeStream(vidStream chan []byte, consumers map[string]StreamConsumer) {
+func ConsumeStream() {
 	for {
 		packet, ok := <-vidStream
 		if !ok {
@@ -50,9 +61,10 @@ var upgrader = websocket.Upgrader{
 
 func streamVideo(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
+
 	defer conn.Close()
 
-	for {
+	for continueStreaming {
 
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -74,10 +86,35 @@ func uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	data, err := base64.StdEncoding.DecodeString(p)
 	currentTime := time.Now()
-	//TODO: Get file name from request
 	var filename = currentTime.Format("2006_01_02_15_04_05_000000") + ".png"
 	ioutil.WriteFile(filename, data, 0644)
 
+}
+
+func initiatializeStream(w http.ResponseWriter, r *http.Request) {
+	log.Println("got init signal")
+	err := json.NewDecoder(r.Body).Decode(&videoMetaData)
+	if err != nil {
+		videoMetaData = VideoMetaData{Container: "webm", Codec: "v9"}
+	}
+	handleStreamStart()
+}
+
+func handleStreamStart() {
+	vidStream = make(chan []byte, 10)
+	continueStreaming = true
+}
+
+func shutdownStream(w http.ResponseWriter, r *http.Request) {
+	log.Println("got shutdown signal")
+	handleStreamShutdown()
+}
+
+func handleStreamShutdown() {
+	for _, consumer := range consumers {
+		consumer.Context <- "stop"
+	}
+	continueStreaming = false
 }
 
 func Shellout(shell string, args ...string) error {
@@ -237,6 +274,7 @@ func StartElectron() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 	go func() {
+		defer os.Exit(0)
 		select {
 		case sig := <-c:
 			if goos == "windows" {
@@ -254,7 +292,7 @@ func StartElectron() {
 					log.Println("Couldn't kill camtron")
 				}
 			}
-			os.Exit(0)
+			handleStreamShutdown()
 		}
 	}()
 
@@ -263,7 +301,8 @@ func StartElectron() {
 	}
 }
 
-func StartCam(consumers map[string]StreamConsumer) {
+func StartCam(consumerList map[string]StreamConsumer) {
+	consumers = consumerList
 	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Panic(err)
@@ -277,9 +316,11 @@ func StartCam(consumers map[string]StreamConsumer) {
 	for _, consumer := range consumers {
 		go consumer.Handler(consumer.Stream, consumer.Context, consumer.Options)
 	}
-	go ConsumeStream(vidStream, consumers)
+	go ConsumeStream()
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/initializeStream", initiatializeStream)
+
 	mux.HandleFunc("/streamVideo", streamVideo)
 	mux.HandleFunc("/log", handleLogging)
 	mux.HandleFunc("/uploadImage", uploadImage)

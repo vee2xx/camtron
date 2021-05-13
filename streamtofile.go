@@ -8,9 +8,10 @@ import (
 )
 
 func StreamToFile(streamChan chan []byte, context chan string, options map[string]string) {
+
 	filePath := options["filePath"]
 	if filePath == "" {
-		filePath = "vid-" + time.Now().Format("2006_01_02_15_04_05") + ".webm"
+		filePath = "vid-" + time.Now().Format("2006_01_02_15_04_05") + "." + videoMetaData.Container
 	}
 
 	maxSize, err := strconv.Atoi(options["maxSize"])
@@ -21,7 +22,8 @@ func StreamToFile(streamChan chan []byte, context chan string, options map[strin
 	var data []byte
 	for {
 		select {
-		case packet, ok := <-streamChan:
+		case packet,
+			ok := <-streamChan:
 			if !ok {
 				log.Print("WARNING: Failed to get packet")
 			}
@@ -33,13 +35,14 @@ func StreamToFile(streamChan chan []byte, context chan string, options map[strin
 			}
 			data = append(data, packet...)
 		case val, _ := <-context:
-			if val == "shutdown" {
+			log.Println("got signal " + val)
+			if val == "stop" {
 				writeVideoToFile(filePath, data, maxSize)
 				close(streamChan)
 				log.Println("INFO: Shutting stream to file")
+				data = nil
 				return
 			}
-
 		}
 	}
 }
