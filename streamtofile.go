@@ -22,8 +22,7 @@ func StreamToFile(streamChan chan []byte, context chan string, options map[strin
 	var data []byte
 	for {
 		select {
-		case packet,
-			ok := <-streamChan:
+		case packet, ok := <-streamChan:
 			if !ok {
 				log.Print("WARNING: Failed to get packet")
 			}

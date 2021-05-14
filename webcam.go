@@ -21,13 +21,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var vidStream chan []byte
+var vidStream chan []byte = make(chan []byte, 10)
 
 var videoMetaData VideoMetaData
 
 var consumers map[string]StreamConsumer
-
-var continueStreaming bool = false
 
 type VideoMetaData struct {
 	Container string
@@ -63,9 +61,7 @@ func streamVideo(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
 
 	defer conn.Close()
-
-	for continueStreaming {
-
+	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			log.Print("ERROR:" + err.Error())
@@ -91,20 +87,6 @@ func uploadImage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func initiatializeStream(w http.ResponseWriter, r *http.Request) {
-	log.Println("got init signal")
-	err := json.NewDecoder(r.Body).Decode(&videoMetaData)
-	if err != nil {
-		videoMetaData = VideoMetaData{Container: "webm", Codec: "v9"}
-	}
-	handleStreamStart()
-}
-
-func handleStreamStart() {
-	vidStream = make(chan []byte, 10)
-	continueStreaming = true
-}
-
 func shutdownStream(w http.ResponseWriter, r *http.Request) {
 	log.Println("got shutdown signal")
 	handleStreamShutdown()
@@ -114,7 +96,6 @@ func handleStreamShutdown() {
 	for _, consumer := range consumers {
 		consumer.Context <- "stop"
 	}
-	continueStreaming = false
 }
 
 func Shellout(shell string, args ...string) error {
@@ -231,7 +212,7 @@ func UnzipBinary(source string) {
 
 }
 
-func StartElectron() {
+func StartWebcamUI() {
 	log.Println("INFO: starting electron")
 
 	goos := runtime.GOOS
@@ -277,27 +258,30 @@ func StartElectron() {
 		defer os.Exit(0)
 		select {
 		case sig := <-c:
-			if goos == "windows" {
-				log.Printf("Got %s signal. Its windows so gotta kill Electron\n", sig)
-				cmd := exec.Command("cmd", "/C", " taskkill /f /im camtron.exe")
-				err := cmd.Run()
-				if err != nil {
-					log.Println("Couldn't kill camtron")
-				}
-			} else if goos == "darwin" {
-				log.Printf("Got %s signal. Its MacOs so gotta kill Electron\n", sig)
-				cmd := exec.Command("bash", "-c", " killall camtron")
-				err := cmd.Run()
-				if err != nil {
-					log.Println("Couldn't kill camtron")
-				}
-			}
+			log.Printf("Got %s signal. Shutting down webcam and stream\n", sig)
 			handleStreamShutdown()
 		}
 	}()
 
 	if err != nil {
 		log.Printf("error: %v\n", err)
+	}
+}
+
+func StopWebcamUI() {
+	goos := runtime.GOOS
+	if goos == "windows" {
+		cmd := exec.Command("cmd", "/C", " taskkill /f /im camtron.exe")
+		err := cmd.Run()
+		if err != nil {
+			log.Println("Couldn't kill camtron")
+		}
+	} else {
+		cmd := exec.Command("bash", "-c", " killall camtron")
+		err := cmd.Run()
+		if err != nil {
+			log.Println("Couldn't kill camtron")
+		}
 	}
 }
 
@@ -311,7 +295,7 @@ func StartCam(consumerList map[string]StreamConsumer) {
 	log.SetOutput(file)
 	log.SetFlags(log.Ldate | log.Ltime | log.LUTC)
 
-	go StartElectron()
+	go StartWebcamUI()
 
 	for _, consumer := range consumers {
 		go consumer.Handler(consumer.Stream, consumer.Context, consumer.Options)
@@ -319,8 +303,7 @@ func StartCam(consumerList map[string]StreamConsumer) {
 	go ConsumeStream()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/initializeStream", initiatializeStream)
-
+	mux.HandleFunc("/endStreaming", shutdownStream)
 	mux.HandleFunc("/streamVideo", streamVideo)
 	mux.HandleFunc("/log", handleLogging)
 	mux.HandleFunc("/uploadImage", uploadImage)
