@@ -13,7 +13,7 @@ require (
 
 ### Record a video and save it to a file
 1. Create a project add "github.com/vee2xx/camtron" to the imports at the top of main.go
-1. Create a an instance of the StreamToFile consumer with a channel to listen for the incoming videostream and add it to a map of consumers
+1. In order to handle the video stream you need a channel to receive the incoming bytes and a handler function to run a loop that checks for new channel input. This is accomplished with the StreamConsumer struct
 ```golang
 var consumers map[string]camtron.StreamConsumer = make(map[string]camtron.StreamConsumer)
 var vidToFileStream = make(chan []byte, 10)
