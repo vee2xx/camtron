@@ -3,31 +3,28 @@ package camtron
 import (
 	"log"
 	"os"
-	"strconv"
 	"time"
 )
 
-func StreamToFile(streamChan chan []byte, context chan string, options map[string]string) {
+var filePath = "./videos/"
+var fileName string = filePath + "vid-" + time.Now().Format("2006_01_02_15_04_05") + ".webm"
+var maxSize int = 1000000000
 
-	filePath := options["filePath"]
-	if filePath == "" {
-		filePath = "vid-" + time.Now().Format("2006_01_02_15_04_05") + "." + videoMetaData.Container
+func StreamToFile(vidStream chan []byte) {
+	if _, err := os.Stat("videos"); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir("videos", os.ModePerm)
+		}
 	}
-
-	maxSize, err := strconv.Atoi(options["maxSize"])
-	if err != nil {
-		maxSize = 1000000000
-	}
-
 	var data []byte
 	for {
 		select {
-		case packet, ok := <-streamChan:
+		case packet, ok := <-vidStream:
 			if !ok {
 				log.Print("WARNING: Failed to get packet")
 			}
 			if len(data) > 1000 {
-				if !writeVideoToFile(filePath, data, maxSize) {
+				if !writeVideoToFile(fileName, data, maxSize) {
 					return
 				}
 				data = nil
@@ -36,8 +33,8 @@ func StreamToFile(streamChan chan []byte, context chan string, options map[strin
 		case val, _ := <-context:
 			log.Println("got signal " + val)
 			if val == "stop" {
-				writeVideoToFile(filePath, data, maxSize)
-				close(streamChan)
+				writeVideoToFile(fileName, data, maxSize)
+				close(vidStream)
 				log.Println("INFO: Shutting stream to file")
 				data = nil
 				return
@@ -70,4 +67,10 @@ func writeVideoToFile(fileName string, video []byte, maxSize int) bool {
 	}
 
 	return true
+}
+
+func StartStreamToFileConsumer() {
+	vidStream := make(chan []byte, 10)
+	RegisterStreamConsumer(vidStream)
+	go StreamToFile(vidStream)
 }
