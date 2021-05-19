@@ -9,32 +9,59 @@ require (
 	github.com/vee2xx/camtron v1.0.8
 )
 ```
-3. Download it using **go get github.com/vee2xx/camtron**
+2. Download it using **go get github.com/vee2xx/camtron**
+3. The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
 
 ### Record a video and save it to a file
 1. Create a project add "github.com/vee2xx/camtron" to the imports at the top of main.go
-1. In order to handle the video stream you need a channel to receive the incoming bytes and a handler function to run a loop that checks for new channel input. This is accomplished with the StreamConsumer struct
-```golang
-var consumers map[string]camtron.StreamConsumer = make(map[string]camtron.StreamConsumer)
-var vidToFileStream = make(chan []byte, 10)
-options := make(map[string]string)
-options["filePath"] = "./vids/vid-" + time.Now().Format("2006_01_02_15_04_05") + "." + config.Video.Format
-options["maxSize"] = config.Video.MaxSize
-streamConsumer := camtron.StreamConsumer{Stream: vidToFileStream, Context: make(chan string), Handler: camtron.StreamToFile, Options: options}
-consumers["file"] = streamConsumer
+1. Camtron comes with a built in stream handler that will save the incoming video to a file. To stream a video to a file add the following two lines to your main function
 ```
-3. Start the streaming process passing consumer map
-4. The StreamToFile handles is included in the library. The configuration options it uses are:
-*  filePath: the directory in which to store the video
-*  maxSize: the maximum size of the file to save. If the maximum size is exceeded the StreamToFile handler will stop processing the stream.
-4. An example project is available here: [camtron-demo](https://github.com/vee2xx/camtron-demo)
-5. The Electron code and binaries are available here: [camtron-ui](https://github.com/vee2xx/camtron-ui)
+StartStreamToFileConsumer() //start a listener that accepts and processes the stream
+go StartCam() //start the Electron app that connects to the webcam and captures the stream
+```
+This starts a listener function that accepts the stream and processes it and the Electron app itself which connects to the webcam and captures the stream. The video file is saved to the videos directory in the project root.
 
-## Next enhancements
-1. Support additional codecs
-2. Add APIs to start and stop streaming
-3. Make the path to the Electron binary configurable
+### Create a custom handler
+1. Register a channel that will recieve the incoming stream
+```
+myStreamChan := make(chan []byte, 10)
+RegisterStream(myStreamChan)
+```
+2. Create a function with a loop that will check the channel for data and then handle it in some way
+```
+func MyStreamHandler(myStreamChan chan []byte) {
+	...
+	
+	for {
+		select {
+		case packet, ok := <-myStreamChan:
+			if !ok {
+				log.Print("WARNING: Failed to get packet")
+			}
 
-# Additional considerations
+			//code to do something with packet
+		case val, _ := <-context: //check the Camtron's global context channel for the signal to shut down
+			if val == "stop" {
+				close(myStreamChan)
+				//do any other cleanup here
+				return
+			}
+		}
+	}
+}
+```
+5. Call the function as a separate process to make it non-blocking
+```
+go MyStreamHandler(myStreamChan)
+```
+
+# Additional information
 1. On Macos the Electron app should pop up a message asking for permission to use the camera. If it does not and the screen is black you may need to go into System > Security and allow it from there.
 2. The Electron app uses localhost:8080 to send the stream to the Go library. Make sure this port is not blocked by the firewall.
+3. If more than one webcam is attached a dropdown will be displayed allowing you to select the desired webcam
+
+### Example project
+[camtron-demo](https://github.com/vee2xx/camtron-demo)
+
+### Source code for the Electron app
+[camtron-ui](https://github.com/vee2xx/camtron-ui)
