@@ -15,7 +15,7 @@ require (
 ```
 3. The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
 
-### Record a video and save it to a file
+### Record a video and save it to a file with Golang
 1. Create a project add camtron to the imports at the top of main.go
 ```
 import (
