@@ -33,6 +33,6 @@ func handleLogging(w http.ResponseWriter, r *http.Request) {
 	log.Print(logEntry.LogLevel + " " + logEntry.Message)
 }
 
-func RegisterStreamConsumer(stream chan []byte) {
+func RegisterStream(stream chan []byte) {
 	streams = append(streams, stream)
 }

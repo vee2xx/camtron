@@ -71,6 +71,6 @@ func writeVideoToFile(fileName string, video []byte, maxSize int) bool {
 
 func StartStreamToFileConsumer() {
 	vidStream := make(chan []byte, 10)
-	RegisterStreamConsumer(vidStream)
+	RegisterStream(vidStream)
 	go StreamToFile(vidStream)
 }

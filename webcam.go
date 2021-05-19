@@ -21,35 +21,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var vidStream chan []byte = make(chan []byte, 10)
-
-var videoMetaData VideoMetaData
-
-var consumers map[string]StreamConsumer
-
-type VideoMetaData struct {
-	Container string
-	Codec     string
-}
-
-type StreamConsumer struct {
-	Stream  chan []byte
-	Context chan string
-	Options map[string]string
-	Handler func(chan []byte, chan string, map[string]string)
-}
-
-func ConsumeStream() {
-	for {
-		packet, ok := <-vidStream
-		if !ok {
-			log.Print("bad packet!")
-		}
-		for _, consumer := range consumers {
-			consumer.Stream <- packet
-		}
-	}
-}
+var streams []chan []byte
+var context chan string = make(chan string)
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -67,7 +40,10 @@ func streamVideo(w http.ResponseWriter, r *http.Request) {
 			log.Print("ERROR:" + err.Error())
 			return
 		}
-		vidStream <- msg
+
+		for _, vidStream := range streams {
+			vidStream <- msg
+		}
 	}
 }
 
@@ -87,15 +63,9 @@ func uploadImage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func shutdownStream(w http.ResponseWriter, r *http.Request) {
-	log.Println("got shutdown signal")
-	handleStreamShutdown()
-}
-
-func handleStreamShutdown() {
-	for _, consumer := range consumers {
-		consumer.Context <- "stop"
-	}
+func ShutdownStream() {
+	context <- "stop"
+	StopWebcamUI()
 }
 
 func Shellout(shell string, args ...string) error {
@@ -259,7 +229,7 @@ func StartWebcamUI() {
 		select {
 		case sig := <-c:
 			log.Printf("Got %s signal. Shutting down webcam and stream\n", sig)
-			handleStreamShutdown()
+			ShutdownStream()
 		}
 	}()
 
@@ -285,8 +255,7 @@ func StopWebcamUI() {
 	}
 }
 
-func StartCam(consumerList map[string]StreamConsumer) {
-	consumers = consumerList
+func StartCam() {
 	file, err := os.OpenFile(logfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Panic(err)
@@ -297,13 +266,7 @@ func StartCam(consumerList map[string]StreamConsumer) {
 
 	go StartWebcamUI()
 
-	for _, consumer := range consumers {
-		go consumer.Handler(consumer.Stream, consumer.Context, consumer.Options)
-	}
-	go ConsumeStream()
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("/endStreaming", shutdownStream)
 	mux.HandleFunc("/streamVideo", streamVideo)
 	mux.HandleFunc("/log", handleLogging)
 	mux.HandleFunc("/uploadImage", uploadImage)
