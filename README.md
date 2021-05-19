@@ -3,11 +3,11 @@ Camtron is a simple cross platform library written in go to easily have Go code 
 
 ## Install
 There are two ways to install Camtron
-2. Download it using 'go get'
+1. Download it using 'go get'
 ```
 go get github.com/vee2xx/camtron
 ```
-4. Add github.com/vee2xx/camtron to go.mod file of your project
+2. Add github.com/vee2xx/camtron to go.mod file of your project
 ```
 require (
 	github.com/vee2xx/camtron v1.0.8
@@ -16,8 +16,11 @@ require (
 3. The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
 
 ### Record a video and save it to a file
-1. Create a project add "github.com/vee2xx/camtron" to the imports at the top of main.go
-1. Camtron comes with a built in stream handler that will save the incoming video to a file. To stream a video to a file add the following two lines to your main function
+1. Create a project add camtron to the imports at the top of main.go
+```
+ "github.com/vee2xx/camtron"
+```
+2. Camtron comes with a built in stream handler that will save the incoming video to a file. To stream a video to a file add the following two lines to your main function
 ```
 StartStreamToFileConsumer() //start a listener that accepts and processes the stream
 go StartCam() //start the Electron app that connects to the webcam and captures the stream
