@@ -38,8 +38,8 @@ RegisterStream(myStreamChan)
 2. Create a function with a loop that will check the channel for data and then handle it in some way
 ```
 func MyStreamHandler(myStreamChan chan []byte) {
-	...
-	
+	var data []byte
+	var myFile = "some/file.webm"
 	for {
 		select {
 		case packet, ok := <-myStreamChan:
@@ -48,6 +48,27 @@ func MyStreamHandler(myStreamChan chan []byte) {
 			}
 
 			//code to do something with packet
+			if len(data) > 1000 {
+				// the StreamToFile handler is included by default (see StreamToFile.go but you can write your own
+				// or one to transform the stream or forward it to other clients. Anything, really!
+				vidFile, fileOpenErr := os.OpenFile(myFile,
+					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if fileOpenErr != nil {
+					log.Println(fileOpenErr)
+				}
+				defer vidFile.Close()
+				fileStat, statErr := vidFile.Stat()
+
+				if statErr != nil {
+					log.Println(statErr)
+				}
+
+				_, writeErr := vidFile.Write(video)
+				if writeErr == nil {
+					data = nil
+				}
+			}
+			data = append(data, packet...)
 		case val, _ := <-context: //check the Camtron's global context channel for the signal to shut down
 			if val == "stop" {
 				close(myStreamChan)
