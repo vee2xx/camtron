@@ -3,13 +3,16 @@ Camtron is a simple cross platform library written in go to easily have Go code 
 
 ## Install
 There are two ways to install Camtron
-1. Add github.com/vee2xx/camtron to go.mod file of your project
+2. Download it using 'go get'
+```
+go get github.com/vee2xx/camtron
+```
+4. Add github.com/vee2xx/camtron to go.mod file of your project
 ```
 require (
 	github.com/vee2xx/camtron v1.0.8
 )
 ```
-2. Download it using **go get github.com/vee2xx/camtron**
 3. The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
 
 ### Record a video and save it to a file
