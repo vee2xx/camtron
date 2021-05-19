@@ -18,7 +18,9 @@ require (
 ### Record a video and save it to a file
 1. Create a project add camtron to the imports at the top of main.go
 ```
+import (
  "github.com/vee2xx/camtron"
+)
 ```
 2. Camtron comes with a built in stream handler that will save the incoming video to a file. To stream a video to a file add the following two lines to your main function
 ```
