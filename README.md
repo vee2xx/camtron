@@ -7,7 +7,7 @@ There are two ways to install Camtron
 ```
 go get github.com/vee2xx/camtron
 ```
-2. Add github.com/vee2xx/camtron to go.mod file of your project
+2. Or add github.com/vee2xx/camtron to go.mod file of your project
 ```
 require (
 	github.com/vee2xx/camtron v1.0.8
