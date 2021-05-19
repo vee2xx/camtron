@@ -25,7 +25,7 @@ import (
 2. Camtron comes with a built in stream handler that will save the incoming video to a file. To stream a video to a file add the following two lines to your main function
 ```
 StartStreamToFileConsumer() //start a listener that accepts and processes the stream
-go StartCam() //start the Electron app that connects to the webcam and captures the stream
+StartCam() //start the Electron app that connects to the webcam and captures the stream
 ```
 This starts a listener function that accepts the stream and processes it and the Electron app itself which connects to the webcam and captures the stream. The video file is saved to the videos directory in the project root.
 
