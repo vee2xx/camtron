@@ -1,9 +1,7 @@
 package camtron
 
 import (
-	"fmt"
 	"os"
-	"runtime"
 	"testing"
 	"time"
 
@@ -22,8 +20,6 @@ func TestUnzip(t *testing.T) {
 
 //Use to test end to end. Requires manual intervention
 func TestStreamToFile(t *testing.T) {
-	fmt.Println(runtime.GOARCH)
-
 	StartStreamToFileConsumer()
 
 	go StartCam()
@@ -33,15 +29,6 @@ func TestStreamToFile(t *testing.T) {
 	_ = os.RemoveAll("videos")
 
 }
-
-// func TestBroadcastStream(t *testing.T) {
-
-// 	StartBroadcastStreamConsumer()
-
-// 	StartCam()
-// 	time.Sleep(60 * time.Second)
-
-// }
 
 func TestCleanUp(t *testing.T) {
 	_ = os.Remove("camtron-linux-x64.zip")

@@ -193,6 +193,9 @@ func StartWebcamUI() {
 	var electronBinary string
 	switch goos {
 	case "windows":
+		if goarch != "amd64" {
+			log.Fatal("Only 64 bit Windows is supported.")
+		}
 		shell = "cmd"
 		args = append(args, "/C")
 		args = append(args, "cd camtron-win32-x64 && camtron.exe")
@@ -208,9 +211,11 @@ func StartWebcamUI() {
 		if goarch == "armv7l" { //Raspberry Pi
 			args = append(args, "cd camtron-linux-armv7l && ./camtron")
 			electronBinary = "camtron-linux-xarmv7l"
-		} else {
+		} else if goarch == "amd64" {
 			args = append(args, "cd camtron-linux-x64 && ./camtron")
 			electronBinary = "camtron-linux-x64"
+		} else {
+			log.Fatalf("Unsupported architecture: %s.\n", goarch)
 		}
 
 	default:
