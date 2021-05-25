@@ -186,6 +186,7 @@ func StartWebcamUI() {
 	log.Println("INFO: starting electron")
 
 	goos := runtime.GOOS
+	goarch := runtime.GOARCH
 
 	var shell string
 	var args []string
@@ -204,8 +205,14 @@ func StartWebcamUI() {
 	case "linux":
 		shell = "bash"
 		args = append(args, "-c")
-		args = append(args, "cd camtron-linux-x64 && ./camtron")
-		electronBinary = "camtron-linux-x64"
+		if goarch == "armv7l" { //Raspberry Pi
+			args = append(args, "cd camtron-linux-armv7l && ./camtron")
+			electronBinary = "camtron-linux-xarmv7l"
+		} else {
+			args = append(args, "cd camtron-linux-x64 && ./camtron")
+			electronBinary = "camtron-linux-x64"
+		}
+
 	default:
 		log.Fatalf("Unsupported OS: %s.\n", goos)
 	}

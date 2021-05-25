@@ -1,7 +1,9 @@
 package camtron
 
 import (
+	"fmt"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -20,6 +22,7 @@ func TestUnzip(t *testing.T) {
 
 //Use to test end to end. Requires manual intervention
 func TestStreamToFile(t *testing.T) {
+	fmt.Println(runtime.GOARCH)
 
 	StartStreamToFileConsumer()
 
