@@ -210,7 +210,7 @@ func StartWebcamUI() {
 		args = append(args, "-c")
 		if goarch == "armv7l" { //Raspberry Pi
 			args = append(args, "cd camtron-linux-armv7l && ./camtron")
-			electronBinary = "camtron-linux-xarmv7l"
+			electronBinary = "camtron-linux-armv7l"
 		} else if goarch == "amd64" {
 			args = append(args, "cd camtron-linux-x64 && ./camtron")
 			electronBinary = "camtron-linux-x64"
