@@ -1,5 +1,5 @@
 # Go Webcam Simplified
-Camtron is a simple cross platform library written in go to easily have Go code interact with webcams i.e. consume and process a stream from a webcam consistantly across OS's without relying on opencv. It uses Electron and the MediaDevices Web API to access the webcam and allows a variety of consumers to listen for and process the video stream, for example recording a video from a webcam and saving the video to a file or sending the video from a webcam on to one or more endpoints. It is supported on Linux, Windows 10 and Macos. Currently the only supported codec is VP9. More will be added shortly.
+Camtron is a simple cross platform library written in go to easily have Go code interact with webcams i.e. consume and process a stream from a webcam consistantly across OS's without relying on opencv. It uses Electron and the MediaDevices Web API to access the webcam and allows a variety of consumers to listen for and process the video stream, for example recording a video from a webcam and saving the video to a file or sending the video from a webcam on to one or more endpoints. It is supported on Linux, Windows 10, Macos and Raspberry Pi 4. Currently the only supported codec is VP9. More will be added shortly.
 
 ## Install
 There are two ways to install Camtron
@@ -34,6 +34,13 @@ require (
 ```
     
 The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
+
+#### Connecting to the webcam on a Raspberry Pi
+If you are trying to run Camtron on a Raspberry Pi you may have trouble connecting to the webcam. Raspberry Pis can be temperamental and a reboot might do the trick. If it, there is more information here:
+
+https://www.raspberrypi.org/forums/viewtopic.php?t=173181
+
+https://www.raspberrypi.org/forums/viewtopic.php?t=220261
 
 ### Record a video and save it to a file with Golang
 Create a project add the following code to main.go
