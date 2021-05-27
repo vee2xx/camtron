@@ -17,7 +17,7 @@ Install using 'go get'
 ```
 go get github.com/vee2xx/camtron
 ```
-### Or use Go Modlues[https://blog.golang.org/using-go-modules]
+### Or use Go Modules[https://blog.golang.org/using-go-modules]
 
 Initialize your project as a module
    
@@ -36,7 +36,12 @@ require (
 The first time Camtron runs it will download and unzip the os appropriate camtron-ui package to your project's root directory so that Camtron can find the Electron app binary and execute it.
 
 #### Connecting to the webcam on a Raspberry Pi
-If you are trying to run Camtron on a Raspberry Pi you may have trouble connecting to the webcam. Raspberry Pis can be temperamental and a reboot might do the trick. If it, there is more information here:
+If you are trying to run Camtron on a Raspberry Pi you will need to in install the GNOME configuarion database system as it is missing.
+```
+sudo apt-get install libgconf-2-4
+```
+
+You may also have trouble connecting to the webcam. Raspberry Pis can be temperamental and a reboot might do the trick. If it, there is more information here:
 
 https://www.raspberrypi.org/forums/viewtopic.php?t=173181
 
