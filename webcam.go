@@ -101,6 +101,7 @@ func getLatestUIVersion() (string, error) {
 
 func downloadBinary(electronBinary string) {
 	latest, err := getLatestUIVersion()
+	log.Println("INFO: downloading binaries from version " + latest)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
