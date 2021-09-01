@@ -30,7 +30,7 @@ func StreamToFile(vidStream chan []byte) {
 				data = nil
 			}
 			data = append(data, packet...)
-		case val, _ := <-context:
+		case val, _ := <-Context:
 			log.Println("got signal " + val)
 			if val == "stop" {
 				writeVideoToFile(fileName, data, maxSize)

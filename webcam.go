@@ -22,7 +22,11 @@ import (
 )
 
 var streams []chan []byte
-var context chan string = make(chan string)
+var Context chan string = make(chan string)
+var conn *websocket.Conn
+var continueStreaming bool = false
+
+const STREAMSTART byte = 26
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -31,8 +35,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func streamVideo(w http.ResponseWriter, r *http.Request) {
-	conn, _ := upgrader.Upgrade(w, r, nil)
-
+	conn, _ = upgrader.Upgrade(w, r, nil)
 	defer conn.Close()
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -41,8 +44,14 @@ func streamVideo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		for _, vidStream := range streams {
-			vidStream <- msg
+		if msg != nil && len(msg) > 0 && msg[0] == STREAMSTART {
+			continueStreaming = true
+		}
+
+		if continueStreaming {
+			for _, vidStream := range streams {
+				vidStream <- msg
+			}
 		}
 	}
 }
@@ -64,8 +73,31 @@ func uploadImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShutdownStream() {
-	context <- "stop"
+	Context <- "stop"
 	StopWebcamUI()
+}
+
+func StopRecording() {
+	if conn == nil {
+		log.Println("Connection not iniitialized")
+	}
+	msg := []byte("recorder.stop")
+	err := conn.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		log.Println(err)
+	}
+	continueStreaming = false
+}
+
+func StartRecording() {
+	if conn == nil {
+		log.Println("Connection not iniitialized")
+	}
+	msg := []byte("recorder.start")
+	err := conn.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func Shellout(shell string, args ...string) error {
